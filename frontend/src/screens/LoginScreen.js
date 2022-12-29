@@ -22,19 +22,19 @@ const LoginScreen = ({navigation}) => {
     }
 
     const login = (email, password) =>{
-        /*const request = {
+        const request = {
             "email": email,
             "password": password,
+            "secondPassword":password
         }
         axios.post(config.url + "/user/login", request).then((response)=>{
-            console.log(response)
             if(response.status == 200){
-                navigation.navigate("Home")
+                navigation.navigate("Home", {email: email, id: response.data.id})
             }
             setErrorMessage("User with provided credentials does not exist.")
             setErrorVisibility(true)
-        })*/
-        navigation.navigate("Home", {email: email})
+        })
+   
     }
   return (
     <View style={styles.container}>

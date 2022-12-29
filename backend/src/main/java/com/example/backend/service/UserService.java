@@ -24,9 +24,17 @@ public class UserService {
     private final UserRepository userRepository;
     private final Validator validator;
 
-    public ResponseEntity<String> login(UserDto userDto) {
-        User actualUser = this.userRepository.findByEmail(userDto.getEmail());
-        return !userDto.getPassword().equals(actualUser.getPassword()) ? new ResponseEntity(HttpStatus.NOT_FOUND) : new ResponseEntity(HttpStatus.OK);
+    public ResponseEntity<User> login(UserDto userDto) {
+        User actualUser = userRepository.findByEmail(userDto.getEmail());
+        if(actualUser == null){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(actualUser, HttpStatus.OK);
+       /* TODO: Enable authentication
+        if(!encoder().matches(userDto.getPassword(), actualUser.getPassword())){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(actualUser, HttpStatus.OK);*/
     }
 
     public String hashValue(String email) {

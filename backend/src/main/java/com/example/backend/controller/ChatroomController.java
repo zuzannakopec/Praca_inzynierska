@@ -52,6 +52,6 @@ public class ChatroomController {
     @GetMapping("/getLastMessage/{chatroomId}")
     public ResponseEntity<Message> getLastMessage(@PathVariable Long chatroomId) {
         List<Message> messages = chatroomService.findMessageHistory(chatroomId);
-        return new ResponseEntity<>(messages.get(messages.size()-1), HttpStatus.OK);
+        return messages.size() > 0 ? new ResponseEntity<>(messages.get(messages.size()-1), HttpStatus.OK) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 }

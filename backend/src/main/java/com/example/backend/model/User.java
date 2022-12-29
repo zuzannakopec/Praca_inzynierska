@@ -14,6 +14,7 @@ public class User {
             strategy = GenerationType.IDENTITY
     )
     Long id;
+    @Column(unique = true)
     String email;
     String password;
 

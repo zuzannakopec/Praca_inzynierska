@@ -16,8 +16,10 @@ public class Chatroom {
     )
     Long id;
     @ManyToMany(
-            cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}
+            cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
+            fetch = FetchType.EAGER
     )
+
     List<User> users;
     String chatroomName;
 

@@ -20,11 +20,11 @@ public class MessageService {
         return messages;
     }
 
-    public void updateMessageHistory(String text, Chatroom chatroom, String userEmail) {
+    public void updateMessageHistory(String text, Chatroom chatroom, Long userId) {
         Message message = new Message();
         message.setText(text);
         message.setChatroom(chatroom);
-        message.setUser(userService.findByEmail(userEmail));
+        message.setUser(userService.findById(userId).get());
         this.messageRepository.save(message);
     }
 

@@ -10,22 +10,33 @@ const HomeScreen = ({ route, navigation }) => {
   const [users, setUsers] = useState([]);
   const [chatroomData, setChatroomData] = useState([]);
   const email = route.params.email;
+  const id = route.params.id;
 
+  // var ws = new WebSocket('ws://192.168.1.4:8080/notification/' + id);
+  // ws.onmessage = (e) => {
+  //   // a message was received
+  //   console.log(e.data);a
+
+  // };
   const getChatroomPreviews = async () => {
     let allChatroomsResponse = await axios.get(
       config.url + "/chatroom/getChatrooms"
     );
     let chatroomPreviews = [];
     for (const chatroom of allChatroomsResponse.data) {
-      let lastMessageResponse = await axios.get(
-        config.url + "/chatroom/getLastMessage/" + chatroom.id
-      );
-      chatroomPreviews.push({
-        chatroom: chatroom,
-        lastMessage: lastMessageResponse.data.text,
-      });
+      try {
+        let lastMessageResponse = await axios.get(
+          config.url + "/chatroom/getLastMessage/" + chatroom.id
+        );
+        chatroomPreviews.push({
+          chatroom: chatroom,
+          lastMessage: lastMessageResponse.data.text,
+        });
+      } catch (error) {
+        console.log(`Failed getting last message for chatroom ${chatroom.id} with: ${error}`);
+      }
     }
-    return chatroomPreviews
+    return chatroomPreviews;
   };
 
   useEffect(() => {
@@ -52,7 +63,7 @@ const HomeScreen = ({ route, navigation }) => {
     axios
       .post(config.url + "/chatroom/findChatroom", body)
       .then((response) => {
-        navigation.navigate("Chatroom", { chatroom: response.data });
+        navigation.navigate("Chatroom", { chatroom: response.data, id: id });
       })
       .catch((error) => {
         createChatroom(body);
@@ -67,6 +78,7 @@ const HomeScreen = ({ route, navigation }) => {
           navigation.navigate("Chatroom", {
             chatroom: response.data,
             email: email,
+            id: id,
           });
         }
       });
@@ -80,6 +92,7 @@ const HomeScreen = ({ route, navigation }) => {
           navigation.navigate("Chatroom", {
             chatroom: response.data,
             email: email,
+            id: id,
           });
         }
       });
