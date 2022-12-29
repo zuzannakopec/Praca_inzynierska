@@ -1,6 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View, ScrollView } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef  } from "react";
 import { Button, Input, Icon } from "react-native-elements";
 import axios from "axios";
 import config from "../config";
@@ -9,6 +9,7 @@ const ChatroomScreen = ({ navigation, route }) => {
   const chatroom = route.params.chatroom;
   const email = route.params.email;
   const userId = route.params.id;
+  const scrollViewRef = useRef();
 
   var ws = new WebSocket("ws://192.168.1.4:8080/notification/" + userId);
 
@@ -70,7 +71,10 @@ const ChatroomScreen = ({ navigation, route }) => {
       <View style={styles.title}>
         <Text>Awesome Chatroom with {userId}</Text>
       </View>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} snapToEnd={true}
+        ref={scrollViewRef}
+         onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: true })}
+      >
         {messages.map((message, key) => (
           <View
             style={
