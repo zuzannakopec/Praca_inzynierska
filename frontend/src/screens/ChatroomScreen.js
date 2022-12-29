@@ -10,8 +10,9 @@ const ChatroomScreen = ({ navigation, route }) => {
   const email = route.params.email;
   const userId = route.params.id;
   const scrollViewRef = useRef();
+  const inputRef = useRef()
 
-  var ws = new WebSocket("ws://192.168.1.4:8080/notification/" + userId);
+  var ws = new WebSocket(config.WebSocketUrl + userId);
 
   ws.onmessage = (e) => {
     // a message was received
@@ -66,6 +67,12 @@ const ChatroomScreen = ({ navigation, route }) => {
     }
   };
 
+  const handleSendButton = () => {
+    setMessage("")
+    inputRef.current.clear()
+    sendMessage()
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.title}>
@@ -82,6 +89,7 @@ const ChatroomScreen = ({ navigation, route }) => {
                 ? styles.userMessageWrapper
                 : styles.incomingMessageWrapper
             }
+
           >
             <View
               style={
@@ -106,6 +114,7 @@ const ChatroomScreen = ({ navigation, route }) => {
           }}
           placeholder="Write something..."
           onChangeText={(text) => setMessage(text)}
+          ref={inputRef}
         />
         <View
           style={{
@@ -122,7 +131,7 @@ const ChatroomScreen = ({ navigation, route }) => {
           <Button
             buttonStyle={{ backgroundColor: "green" }}
             title={"Send"}
-            onPress={() => sendMessage()}
+            onPress={() => handleSendButton()}
           />
         </View>
       </View>
