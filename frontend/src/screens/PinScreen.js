@@ -48,7 +48,7 @@ const PinScreen = ({navigation}) => {
     console.log(request)
     axios.post(config.url + "/user/pin", request).then((response)=>{
       if(response.status == 200){ 
-        console.log("logging in" + response.data)
+        console.log(emailFromStorage, userIdFromStorage)
         navigation.navigate("Home", {email: emailFromStorage, id: userIdFromStorage})
       }
     })
@@ -113,6 +113,14 @@ const PinScreen = ({navigation}) => {
                 alignItems:"flex-end"
               }}/> : undefined}
               </View>
+
+              <Button title={"Return to login page"} onPress={()=>{navigation.navigate("Login")}} buttonStyle={{
+                backgroundColor: config.secondaryColorDark,
+                borderWidth: 2,
+                borderColor: 'white',
+                borderRadius: 30,
+                alignItems:"flex-end"
+              }}/>
       </View>  
   
   

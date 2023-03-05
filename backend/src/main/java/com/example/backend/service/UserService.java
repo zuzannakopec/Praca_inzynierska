@@ -70,15 +70,9 @@ public class UserService {
         User user = new User();
         user.setEmail(userDto.getEmail());
         user.setPassword(hashedPassword);
-
-        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-        generator.initialize(2048);
-        KeyPair pair = generator.generateKeyPair();
-        String encodedPublicKey = Base64.getEncoder().encodeToString(pair.getPublic().getEncoded());
-
-        user.setPublicKey(encodedPublicKey);
+        user.setPublicKey(userDto.getPublicKey());
         userRepository.save(user);
-        return new ResponseEntity<>(Base64.getEncoder().encodeToString(pair.getPublic().getEncoded()), HttpStatus.OK);
+        return new ResponseEntity<>("Register complete", HttpStatus.OK);
     }
 
     public Optional<User> findById(Long id) {return userRepository.findById(id);}

@@ -6,6 +6,7 @@ import axios from "axios";
 import config from "../config";
 import * as SecureStore from "expo-secure-store";
 import { generateRsaKeyPair } from "../EncryptionUtils";
+import Loading from "../components/Loading";
 
 const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -13,6 +14,7 @@ const RegisterScreen = ({ navigation }) => {
   const [secondPassword, setSecondPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [errorVisibility, setErrorVisibility] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
 
   const validate = () => {
     console.log(email, password, secondPassword);
@@ -21,23 +23,31 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const register = async (email, password, secondPassword) => {
-    const { publicKey, privateKey } = await generateRsaKeyPair()
-    const request = {
-      email: email,
-      password: password,
-      secondPassword: secondPassword,
-      publicKey: publicKey
-    };
-    axios.post(config.url + "/user/register", request).then((response) => {
-      if (response.status == 200) {
-        SecureStore.setItemAsync("privateKey", privateKey)
-        navigation.navigate("RegisterDetails", { email: email });
-      }
-    });
+    setIsLoading(true)
+    generateRsaKeyPair().then(({ publicKey, privateKey })=>{
+      console.log("WYGENEROWANE KLUCZE")
+      console.log(publicKey, privateKey)
+      setIsLoading(false)
+      const request = {
+        email: email,
+        password: password,
+        secondPassword: secondPassword,
+        publicKey: publicKey
+      };
+      axios.post(config.url + "/user/register", request).then((response) => {
+        if (response.status == 200) {
+          SecureStore.setItemAsync("privateKey", privateKey)
+          navigation.navigate("RegisterDetails", { email: email });
+        }
+      }).catch((error)=>console.log(error));
+    })
+    
   };
 
 
   return (
+    isLoading?
+    <Loading/>:
     <View style={styles.container}>
       <View
         style={{

@@ -16,12 +16,16 @@ import { InstantSearch } from "react-instantsearch-native";
 import algoliasearch from "algoliasearch/lite";
 import { getRandomBytesAsync } from "expo-random";
 import * as Crypto from "expo-crypto";
-import { encryptMessageWithRsa } from "../EncryptionUtils";
+import { aesKey, encryptMessageWithRsa, generateAESKey } from "../EncryptionUtils";
+import { enc, AES } from 'crypto-js';
 
 const SearchScreen = ({ route, navigation }) => {
   const [users, setUsers] = useState([]);
   const [chatroomData, setChatroomData] = useState([]);
   const [query, setQuery] = useState("");
+  const [otherUserPublicKey, setOtherUserPublicKey] = useState("")
+  const [currentUserPublicKey, setCurrentUserPublicKey] = useState("")
+
   const email = route.params.email;
   const id = route.params.id;
 
@@ -51,68 +55,66 @@ const SearchScreen = ({ route, navigation }) => {
       });
   };
 
-  const getUserPublicKey = (userId) => {
-    axios.get(config.url + "user/getPublicKey/" + userId).then((response) => {
+  const getUserPublicKey = async (userId) => {
+      const response = await axios.get(config.url + "/user/getPublicKey/" + parseInt(userId));
       if (response.status == 200) {
         return response.data;
       } else {
         console.log(response.status);
       }
-    });
   };
-
+  
+  const prepareKeys = async (user) =>{
+    const key = generateAESKey()
+    const temp_otherUserPublicKey = await getUserPublicKey(user.id);
+    setOtherUserPublicKey(temp_otherUserPublicKey)
+    const temp_currentUserPublicKey = await getUserPublicKey(id);
+    setCurrentUserPublicKey(temp_currentUserPublicKey)
+    return key
+  }
+  
   const createChatroom = async (body, user) => {
-    const key = await generateAESKey();
-    const otherUserPublicKey = getUserPublicKey(user.id);
-    const currentUserPublicKey = getUserPublicKey(id);
-    const otherUserEncryptedKey = encryptMessageWithRsa(
-      key,
-      otherUserPublicKey
-    );
-    const currentUserEncryptedKey = encryptMessageWithRsa(
-      key,
-      currentUserPublicKey
-    );
+      const key = await prepareKeys(user);
+      const aesKeyString = enc.Hex.stringify(key); 
+      const otherUserEncryptedKey = await encryptMessageWithRsa(aesKeyString, otherUserPublicKey);
+      const currentUserEncryptedKey = await encryptMessageWithRsa(aesKeyString, currentUserPublicKey);
+  
+      console.log("creating chatroom");
+      const response = await axios.post(config.url + "/chatroom/createChatroom", body);
 
-    console.log("creating chatroom");
-    axios
-      .post(config.url + "/chatroom/createChatroom", body)
-      .then((response) => {
-        if (response.status == 200) {
-          const chatroomData = response.data;
-          const accessibilityBody = [
-            {
-              userId: user.id,
-              chatroomId: chatroomData.id,
-              encryptedKey: otherUserEncryptedKey,
-            },
-            {
-              userId: id,
-              chatroomId: chatroomData.id,
-              encryptedKey: currentUserEncryptedKey,
-            },
-          ];
-          axios
-            .post(config.url + "/chatroom/accessibility", accessibilityBody)
-            .then(() => {
-              navigation.navigate("Chatroom", {
-                chatroom: chatroomData,
-                email: email,
-                id: id,
-              });
-            });
+      if (response.status === 200) {
+        const chatroomData = response.data;
+        const accessibilityBody = [
+          {
+            userId: user.id,
+            chatroomId: chatroomData.id,
+            encryptedKey: otherUserEncryptedKey,
+          },
+          {
+            userId: id,
+            chatroomId: chatroomData.id,
+            encryptedKey: currentUserEncryptedKey,
+          },
+        ];
+  
+
+        const accessibilityResponse = await axios.post(config.url + "/chatroom/accessibility", accessibilityBody);
+        console.log("AAAAAAAAAAA");
+
+        if (accessibilityResponse.status === 200) {
+          console.log("ChatroomData")
+          console.log(chatroomData)
+          navigation.navigate("Chatroom", {
+            chatroom: chatroomData,
+            email: email,
+            id: id,
+  
+          });
         }
-      });
-  };
+      }
 
-  const generateAESKey = async () => {
-    const keyBytes = await getRandomBytesAsync(32); // Generate a 32-byte (256-bit) key
-    const key = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      keyBytes.toString()
-    );
-    return key;
   };
+  
 
  
   const searchClient = algoliasearch(

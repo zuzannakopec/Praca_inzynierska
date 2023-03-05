@@ -13,53 +13,66 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const HomeScreen = ({ route, navigation }) => {
   const [users, setUsers] = useState([]);
-  const [chatroomData, setChatroomData] = useState([]);
+  const [chatroomsData, setChatroomsData] = useState([]);
+  const [chatroomResponse, setAllChatroomResponse] = useState([])
+  const [chatroomDataLoaded, setChatroomDataLoaded] = useState(false)
   const email = route.params.email;
   const id = route.params.id;
+  let ws = new WebSocket(config.WebSocketUrl + id);
 
-  var ws = new WebSocket(config.WebSocketUrl + id);
-
-  ws.onmessage = async (e) => {
-    setChatroomData(await getChatroomPreviews());
-  };
 
   const getChatroomPreviews = async () => {
-    let allChatroomsResponse = await axios.get(
+    axios.get(
       config.url + "/chatroom/getChatrooms"
-    );
-    if(allChatroomsResponse.length > 0){
-      let chatroomPreviews = [];
-      for (const chatroom of allChatroomsResponse.data) {
-        try {
-          let lastMessageResponse = await axios.get(
-            config.url + "/chatroom/getLastMessage/" + chatroom.id
-          );
-          chatroomPreviews.push({
-            chatroom: chatroom,
-            lastMessage: lastMessageResponse.data.text,
-          });
-        } catch (error) {
-          console.log(
-            `Failed getting last message for chatroom ${chatroom.id} with: ${error}`
-          );
+    ).then(async (response) => {
+      let allChatroomsResponse = response.data
+      setAllChatroomResponse(response.data)
+      if(response.data.length > 0){
+        let chatroomPreviews = [];
+        for (const chatroom of allChatroomsResponse.data) {
+          try {
+            let lastMessageResponse = await axios.get(
+              config.url + "/chatroom/getLastMessage/" + chatroom.id
+            );
+            chatroomPreviews.push({
+              chatroom: chatroom,
+              lastMessage: lastMessageResponse.data.text,
+            });
+          } catch (error) {
+            console.log(
+              `Failed getting last message for chatroom ${chatroom.id} with: ${error}`
+            );
+          }
         }
+        return chatroomPreviews;
       }
-      return chatroomPreviews;
-    }
+    })
+    
   };
+
+
 
   useEffect(() => {
     let asyncEffect = async () => {
-      setChatroomData(await getChatroomPreviews());
+      axios.get(
+        config.url + "/chatroom/getChatrooms"
+      ).then((response) => {
+        setChatroomsData(response.data)
+        setChatroomDataLoaded(true)
+      })
+ //     setChatroomData(await getChatroomPreviews());
     };
     asyncEffect();
+
   }, []);
 
-  useEffect(async () => {
-    axios.get(config.url + "/user/getAll").then((response) => {
-      setUsers(response.data);
-    });
-
+  useEffect(() => {
+    let getUsers = async () => {
+      axios.get(config.url + "/user/getAll").then((response) => {
+        setUsers(response.data);
+      });  
+    }
+    getUsers()
   }, []);
 
 
@@ -97,7 +110,7 @@ const HomeScreen = ({ route, navigation }) => {
         >
           <Pressable
             onPress={() =>
-              navigation.navigate("Settings", { email: email, id: id })
+              navigation.navigate("Settings", { email: email, id: id, Websocket:ws })
             }
           >
             <Image
@@ -130,17 +143,25 @@ const HomeScreen = ({ route, navigation }) => {
       </View>
       <View style={styles.container}>
         <ScrollView>
-          {chatroomData? chatroomData.length != 0 ? (
-            chatroomData.map((chatroomData, key) =>
-              chatroomData.chatroom.users[0].email == email ||
-              chatroomData.chatroom.users[1].email == email ? (
-                <Pressable
-                  onPress={() => openChatroom(chatroomData.chatroom)}
-                  style={(pressed) =>
-                    pressed ? styles.chatroom : styles.pressedChatroom
-                  }
-                >
-                  <View
+
+          {
+             chatroomsData.map((chatroomData, key) => {
+                if (chatroomData && chatroomData.users) {
+              const chatroomUsers = chatroomData.users;
+              if (
+                chatroomUsers[0].email === email ||
+                chatroomUsers[1].email === email
+              )
+              {
+                return (
+                  <Pressable
+                    key={key}
+                    onPress={() => openChatroom(chatroomData)}
+                    style={(pressed) =>
+                      pressed ? styles.chatroom : styles.pressedChatroom
+                    }
+                  >
+                         <View
                     style={{
                       justifyContent: "space-between",
                       width: "100%",
@@ -164,24 +185,44 @@ const HomeScreen = ({ route, navigation }) => {
                       />
                     </View>
                     <View style={{ alignSelf: "center", width: "70%" }}>
-                      <Text>{chatroomData.chatroom.users[0].email == email? chatroomData.chatroom.users[1].email : chatroomData.chatroom.users[0].email}</Text>
+                      <Text>{chatroomData.users[0].email == email? chatroomData.users[1].email : chatroomData.users[0].email}</Text>
                       <Text style={{ color: "grey" }}>
-                        {JSON.stringify(chatroomData.lastMessage)}
+                        JSON.stringify(chatroomData.lastMessage)
                       </Text>
                       
                     </View>
                   </View>
+                  </Pressable>
+                );
+              }}}
+             )}
+          
+        {/*chatroomDataLoaded ? (
+        chatroomsData.map((chatroomData, key) => {
+          if (chatroomData && chatroomData.users) {
+            const chatroomUsers = chatroomData.chatroom.users;
+            if (
+              chatroomUsers[0].email === email ||
+              chatroomUsers[1].email === email
+            ) {
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => openChatroom(chatroomData.chatroom)}
+                  style={(pressed) =>
+                    pressed ? styles.chatroom : styles.pressedChatroom
+                  }
+                >
+                 
                 </Pressable>
-              ) : (
-                <></>
-              )
-            )
-          ) : (
-            <Text>You don't have any chatrooms yet!</Text>
-          ) : (
-            <Text>You don't have any chatrooms yet!</Text>
-          )}
-        </ScrollView>
+              );
+            }
+          }
+          return null;
+        })
+      ) : (
+        <Text>You don't have any chatrooms yet!</Text>
+      )*/}</ScrollView>
       </View>
     </View>
   );

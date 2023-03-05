@@ -15,5 +15,6 @@ public class UserDto {
     @NotNull
     String password;
     String secondPassword;
+    String publicKey;
 
 }

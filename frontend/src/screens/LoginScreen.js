@@ -7,6 +7,7 @@ import config from "../config";
 import PinScreen from "./PinScreen";
 import * as SecureStore from "expo-secure-store";
 import { RSA } from 'react-native-rsa-native';
+import { generateRsaKeyPair } from "../EncryptionUtils";
 
 
 const LoginScreen = ({ navigation }) => {
@@ -38,7 +39,7 @@ const LoginScreen = ({ navigation }) => {
       email: email,
       password: password,
     };
-    axios.post(config.url + "/user/login", request).then(async (response) => {
+    axios.post(config.url + "/user/login", request, {headers:{'Content-Type':'application/json'}}).then(async (response) => {
       if (response.status == 200) {
         await SecureStore.setItemAsync("token", response.data.jwt);
         await SecureStore.setItemAsync(
@@ -56,10 +57,10 @@ const LoginScreen = ({ navigation }) => {
   CheckIfTokenValid();
 
   return (
-    <>
-      {isTokenValid ? (
-        <PinScreen navigation={navigation} />
-      ) : (
+   // <>
+  //    {isTokenValid ? (
+   //     <PinScreen navigation={navigation} />
+  //    ) : (
         <View style={styles.container}>
           <View
             style={{
@@ -119,8 +120,8 @@ const LoginScreen = ({ navigation }) => {
 
           <StatusBar style="auto" />
         </View>
-      )}
-    </>
+  //    )}
+ //   </>
   );
 };
 

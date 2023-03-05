@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,8 @@ public class ChatroomService {
     private final AccessibilityRepository accessibilityRepository;
 
     public List<Chatroom> findAll() {
-        return chatroomRepository.findAll();
+        var all= chatroomRepository.findAll();
+        return all;
     }
 
     public Optional<Chatroom> findById(Long id) {
@@ -46,19 +48,34 @@ public class ChatroomService {
     }
 
     public Optional<Chatroom> find(Chatroom chatroom){
-        Chatroom foundChatroom = chatroomRepository.findByChatroomName(chatroom.getChatroomName());
-        if(foundChatroom == null)
+        List<User> foundUsers = findUsers(chatroom);
+        List<Chatroom> foundChatrooms = chatroomRepository.findAllByUsersIn(foundUsers);
+        if(foundChatrooms == null)
             return Optional.empty();
-        return this.findById(foundChatroom.getId());
+        for(Chatroom foundChatroom : foundChatrooms){
+            if(foundChatroom.getUsers().equals(foundUsers)){
+                return Optional.of(foundChatroom);
+            }
+        }
+        return Optional.empty();
     }
 
-    public ResponseEntity<String> saveAccessibility(Accessibility accessibility){
+    public ResponseEntity<String> saveAccessibility(List<Accessibility> accessibilityList){
         try {
-            accessibilityRepository.save(accessibility);
+            accessibilityRepository.saveAll(accessibilityList);
             return new ResponseEntity<>("Chatroom accessibility saved.", HttpStatus.OK);
         }catch(Exception e){
             return new ResponseEntity<>("Unknown error has occured.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private List<User> findUsers(Chatroom chatroom){
+        List<User> result = new ArrayList<>();
+        for(User user : chatroom.getUsers()){
+            User foundUser = userService.findByEmail(user.getEmail());
+            result.add(foundUser);
+        }
+        return result;
     }
 
     public Accessibility getAccessibility(Long userId, Long chatroomId){

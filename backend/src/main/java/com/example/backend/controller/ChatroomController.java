@@ -58,8 +58,8 @@ public class ChatroomController {
 
 
     @PostMapping({"/accessibility"})
-    public ResponseEntity<String> saveAccessibility(@RequestBody Accessibility accessibility) {
-       return chatroomService.saveAccessibility(accessibility);
+    public ResponseEntity<String> saveAccessibility(@RequestBody List<Accessibility> accessibilityList) {
+       return chatroomService.saveAccessibility(accessibilityList);
     }
 
 

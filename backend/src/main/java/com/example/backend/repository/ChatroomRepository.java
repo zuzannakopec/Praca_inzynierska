@@ -2,6 +2,7 @@ package com.example.backend.repository;
 
 import com.example.backend.model.Chatroom;
 import com.example.backend.model.Message;
+import com.example.backend.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,4 +12,5 @@ import java.util.List;
 public interface ChatroomRepository extends JpaRepository<Chatroom, Long> {
     List<Message> findAllById(Long id);
     Chatroom findByChatroomName(String chatroomName);
+    List<Chatroom> findAllByUsersIn(List<User> users);
 }

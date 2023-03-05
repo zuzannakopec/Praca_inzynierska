@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { Button, Input, Icon, colors } from "react-native-elements";
 import axios from "axios";
 import config from "../config";
-
+import * as SecureStore from "expo-secure-store";
 import CppCodeFormatter from "../components/CppCodeFormatter";
 import PythonCodeFormatter from "../components/PythonCodeFormatter";
 import JavaScriptCodeFormatter from "../components/JavaScriptCodeFormatter";
@@ -13,6 +13,27 @@ import { decryptMessageWithAES, decryptMessageWithRsa, encryptMessageWithAES } f
 const ChatroomScreen = ({ navigation, route }) => {
   const chatroom = route.params.chatroom;
   const userId = route.params.id;
+  const [webSocket, setWebSocket] = useState(null);
+
+  useEffect(() => {
+    const ws = new WebSocket(config.WebSocketUrl + userId);
+    setWebSocket(ws);
+    return () => {
+      ws.close();
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (webSocket) {
+      const intervalId = setInterval(() => {
+        if (webSocket.readyState === WebSocket.CLOSED) {
+          const ws = new WebSocket(config.WebSocketUrl + userId);
+          setWebSocket(ws);
+        }
+      }, 5000);
+      return () => clearInterval(intervalId);
+    }
+  }, [webSocket, userId]);
   const scrollViewRef = useRef();
   const inputRef = useRef();
 
@@ -31,8 +52,8 @@ const ChatroomScreen = ({ navigation, route }) => {
   const [currentUserEncryptedKey, setCurrentUserEncryptedKey] = useState("")
   const [encryptionKey, setEncryptionKey] = useState("")
   const [privateKey, setPrivateKey] = useState("")
-
-  var ws = new WebSocket(config.WebSocketUrl + userId);
+  const [privateKeyLoaded, setPrivateKeyLoaded] = useState(false);
+  const [messagesLoaded, setMessagesLoaded] = useState(false)
 
   useEffect(() => {
     axios
@@ -40,106 +61,126 @@ const ChatroomScreen = ({ navigation, route }) => {
       .then((response) => {
         setCurrentUserEncryptedKey(response.data.encryptedKey)
         getPrivateKey()
-        decryptAESKey()
       })
   }, [])
-
+  
   useEffect(() => {
-    axios
+    let getHistory = async () =>{
+      axios
       .get(config.url + "/chatroom/getMessageHistory/" + chatroom.id)
       .then((response) => {
-        setMessages(response.data)
-        decryptMessages()
-      })
-  }, [])
+        setMessages(response.data);
+        setMessagesLoaded(true)
+      });
+      console.log(messages)
+    }
+    getHistory()
+    decryptMessages()
+  }, []);
 
-  const getPrivateKey = async () =>{
-    let key = await SecureStore.getItemAsync("encryptionKey")
+  useEffect(() => {
+    if (privateKeyLoaded && currentUserEncryptedKey !== "" && encryptionKey !== "") {
+      console.log('GONNA DECRYPT AES')
+      console.log(encryptionKey)
+      decryptAESKey()
+    }
+  }, [privateKeyLoaded, currentUserEncryptedKey, encryptionKey])
+  
+  const getPrivateKey = async () => {
+    let key = await SecureStore.getItemAsync("privateKey")
     setPrivateKey(key)
+    setPrivateKeyLoaded(true)
   }
-
-  const decryptAESKey = () =>{
-    let key = decryptMessageWithRsa(currentUserEncryptedKey, privateKey)
+  
+  const decryptAESKey = async () => {
+    let key = await decryptMessageWithRsa(currentUserEncryptedKey, privateKey)
     setEncryptionKey(key)
+    console.log("DECRYPTED WITH RSA")
+    console.log(key)
   }
-
-  const decryptMessages = () =>{
+  
+  const decryptMessages = async () => {
     let decryptedMessages = []
-    messages.map((message)=>{
-      let decryptedMessage = decryptMessageWithAES(message.text, encryptionKey, message.iv)
-      decryptedMessages.push(decryptedMessage)
+    messages.map(async(message) => {
+      let decryptedMessage = await decryptMessageWithAES(message.text, encryptionKey)
+    //  message.text = decryptedMessage
+      console.log("DECRYPTED TEXT "+decryptedMessage)
+      decryptedMessages.push(message)
     })
     setMessages(decryptedMessages)
   }
 
-  const sendMessage = () => {
-    if (message != "") {
-      const {iv, encryptedMessage} = encryptMessageWithAES(message, encryptionKey);
-
-      if(isCppEnabled){
-        ws.send(
+  const sendMessage = async () => {
+    console.log("SEND");
+    if (message !== "") {
+      const encryptedMessage = await encryptMessageWithAES(message, encryptionKey);
+      if (isCppEnabled) {
+        webSocket.send(
           JSON.stringify({
             message: encryptedMessage,
             chatroomId: parseInt(chatroom.id),
-            codeType:'cpp',
-            isCode:true,
-            iv:iv
+            codeType: "cpp",
+            isCode: true,
           })
         );
-      }
-      else if(isJsEnabled){
-        ws.send(
+      } else if (isJsEnabled) {
+        webSocket.send(
           JSON.stringify({
             message: encryptedMessage,
             chatroomId: parseInt(chatroom.id),
-            codeType:'javascript',
-            isCode:true
+            codeType: "javascript",
+            isCode: true,
           })
         );
-      }
-      else if(isPythonEnabled){
-        ws.send(
+      } else if (isPythonEnabled) {
+        webSocket.send(
           JSON.stringify({
             message: encryptedMessage,
             chatroomId: parseInt(chatroom.id),
-            codeString:'python',
-            isCode:true
+            codeString: "python",
+            isCode: true,
           })
         );
-      }
-      else {
-        ws.send(
+      } else {
+        console.log(encryptedMessage);
+        webSocket.send(
           JSON.stringify({
             message: encryptedMessage,
             chatroomId: parseInt(chatroom.id),
-            isCode:false
+            isCode: false,
           })
         );
+        console.log("ok");
       }
+      setMessage("");
+      inputRef.current.clear();
     }
   };
 
-
-  ws.onmessage = (e) => {
-    axios
-      .get(config.url + "/chatroom/getMessageHistory/" + chatroom.id)
-      .then((response) => {
-        setMessages(response.data);
-      });
-  };
-
-  ws.onerror = (e) => {
-    console.log("ERROR");
-    console.log(e.message);
-  };
-
-  ws.onclose = (e) => {
-    console.log("CLOSING");
-  };
-
+  useEffect(() => {
+    if (webSocket) {
+      webSocket.onmessage = (e) => {
+        axios
+        .get(config.url + "/chatroom/getMessageHistory/" + chatroom.id)
+        .then((response) => {
+          setMessages(response.data); 
+          console.log(messages)
+        });
+      };
+  
+      webSocket.onerror = (e) => {
+        console.log("ERROR");
+        console.log(e.message);
+      };
+  
+      webSocket.onclose = (e) => {
+        console.log("CLOSING");
+      };
+    }
+  }, [webSocket, chatroom.id]);
+  
   const handleSendButton = () => {
     setMessage("");
-    inputRef.current.clear();
     sendMessage();
   };
 
@@ -156,7 +197,8 @@ const ChatroomScreen = ({ navigation, route }) => {
           scrollViewRef.current.scrollToEnd({ animated: true })
         }
       >
-        {messages.map((message, key) => (
+        {messagesLoaded?messages.map((message, key) => (
+          
           <View
             style={
               message.user.id == userId
@@ -181,7 +223,7 @@ const ChatroomScreen = ({ navigation, route }) => {
             }
             </View>
           </View>
-        ))}
+          )):<></>}
       </ScrollView><View style={{  flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "center",}}>

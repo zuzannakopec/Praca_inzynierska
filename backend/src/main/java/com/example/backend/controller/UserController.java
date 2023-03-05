@@ -68,8 +68,8 @@ public class UserController {
     }
 
     @GetMapping("/getPublicKey/{userId}")
-    ResponseEntity<String> getPublicKey(@PathVariable Long id) {
-        return new ResponseEntity<>(userService.getPublicKey(id), HttpStatus.OK);
+    ResponseEntity<String> getPublicKey(@PathVariable int userId) {
+        return new ResponseEntity<>(userService.getPublicKey((long) userId), HttpStatus.OK);
     }
 
     @GetMapping("/getId/{email}")
