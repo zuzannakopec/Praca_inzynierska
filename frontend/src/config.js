@@ -6,7 +6,13 @@ export default {
     screenHeight: window.height,
     screenWidth: window.width,
 
-    url: "http://192.168.1.4:8080",
-    WebSocketUrl:"ws://192.168.1.4:8080/notification/",
-    appName:"Temprorary name"
+    url: "http://192.168.1.200:8080",
+    WebSocketUrl:"ws://192.168.1.200:8080/notification/",
+    appName:"Temprorary name",
+    primaryColor:"#009E8B",
+    secondaryColorLight:"#01CDB5",
+    secondaryColorDark:"#318076",
+    greyBackground:"#EDEDED",
+    whiteBackground:"#FFFFFF",
+
 }

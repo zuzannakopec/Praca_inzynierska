@@ -16,15 +16,18 @@ public class MessageService {
     private final UserService userService;
 
     public List<Message> findMessageHistory(Long chatroomId) {
-        List<Message> messages = messageRepository.findAllByChatroomId(chatroomId);
-        return messages;
+        return messageRepository.findAllByChatroomId(chatroomId);
     }
 
-    public void updateMessageHistory(String text, Chatroom chatroom, Long userId) {
-        Message message = new Message();
-        message.setText(text);
-        message.setChatroom(chatroom);
+    public void updateMessageHistory(String text, String codeType, boolean isCode, Chatroom chatroom, Long userId) {
+        Message message = Message.builder()
+                .text(text)
+                .chatroom(chatroom)
+                .isCode(isCode)
+                .codeType(codeType)
+                .build();
         message.setUser(userService.findById(userId).get());
+
         this.messageRepository.save(message);
     }
 

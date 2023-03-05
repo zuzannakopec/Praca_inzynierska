@@ -1,5 +1,6 @@
 package com.example.backend.controller;
 
+import com.example.backend.model.Accessibility;
 import com.example.backend.model.Chatroom;
 import com.example.backend.model.Message;
 import com.example.backend.service.ChatroomService;
@@ -53,5 +54,17 @@ public class ChatroomController {
     public ResponseEntity<Message> getLastMessage(@PathVariable Long chatroomId) {
         List<Message> messages = chatroomService.findMessageHistory(chatroomId);
         return messages.size() > 0 ? new ResponseEntity<>(messages.get(messages.size()-1), HttpStatus.OK) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+
+    @PostMapping({"/accessibility"})
+    public ResponseEntity<String> saveAccessibility(@RequestBody Accessibility accessibility) {
+       return chatroomService.saveAccessibility(accessibility);
+    }
+
+
+    @GetMapping({"/accessibility/{userId}/{chatroomId}"})
+    public ResponseEntity<Accessibility> getAccessibility(@PathVariable Long userId, @PathVariable Long chatroomId) {
+        return new ResponseEntity<>(chatroomService.getAccessibility(userId, chatroomId), HttpStatus.OK);
     }
 }

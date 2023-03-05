@@ -1,10 +1,15 @@
 import axios from "axios";
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View, ScrollView } from "react-native";
-import { Button, Input } from "react-native-elements";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  Image
+} from "react-native";
 import config from "../config";
-import Icon from "react-native-ionicons";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const HomeScreen = ({ route, navigation }) => {
   const [users, setUsers] = useState([]);
@@ -12,31 +17,35 @@ const HomeScreen = ({ route, navigation }) => {
   const email = route.params.email;
   const id = route.params.id;
 
-  // var ws = new WebSocket('ws://192.168.1.4:8080/notification/' + id);
-  // ws.onmessage = (e) => {
-  //   // a message was received
-  //   console.log(e.data);a
+  var ws = new WebSocket(config.WebSocketUrl + id);
 
-  // };
+  ws.onmessage = async (e) => {
+    setChatroomData(await getChatroomPreviews());
+  };
+
   const getChatroomPreviews = async () => {
     let allChatroomsResponse = await axios.get(
       config.url + "/chatroom/getChatrooms"
     );
-    let chatroomPreviews = [];
-    for (const chatroom of allChatroomsResponse.data) {
-      try {
-        let lastMessageResponse = await axios.get(
-          config.url + "/chatroom/getLastMessage/" + chatroom.id
-        );
-        chatroomPreviews.push({
-          chatroom: chatroom,
-          lastMessage: lastMessageResponse.data.text,
-        });
-      } catch (error) {
-        console.log(`Failed getting last message for chatroom ${chatroom.id} with: ${error}`);
+    if(allChatroomsResponse.length > 0){
+      let chatroomPreviews = [];
+      for (const chatroom of allChatroomsResponse.data) {
+        try {
+          let lastMessageResponse = await axios.get(
+            config.url + "/chatroom/getLastMessage/" + chatroom.id
+          );
+          chatroomPreviews.push({
+            chatroom: chatroom,
+            lastMessage: lastMessageResponse.data.text,
+          });
+        } catch (error) {
+          console.log(
+            `Failed getting last message for chatroom ${chatroom.id} with: ${error}`
+          );
+        }
       }
+      return chatroomPreviews;
     }
-    return chatroomPreviews;
   };
 
   useEffect(() => {
@@ -46,43 +55,13 @@ const HomeScreen = ({ route, navigation }) => {
     asyncEffect();
   }, []);
 
-  useEffect(() => {
+  useEffect(async () => {
     axios.get(config.url + "/user/getAll").then((response) => {
       setUsers(response.data);
     });
+
   }, []);
 
-  const tryCreateChatroom = (user) => {
-    const currentUser = {
-      email: email,
-    };
-    const body = {
-      users: [currentUser, user],
-      chatroomName: user.email + " chat",
-    };
-    axios
-      .post(config.url + "/chatroom/findChatroom", body)
-      .then((response) => {
-        navigation.navigate("Chatroom", { chatroom: response.data, id: id });
-      })
-      .catch((error) => {
-        createChatroom(body);
-      });
-  };
-
-  const createChatroom = (body) => {
-    axios
-      .post(config.url + "/chatroom/createChatroom", body)
-      .then((response) => {
-        if (response.status == 200) {
-          navigation.navigate("Chatroom", {
-            chatroom: response.data,
-            email: email,
-            id: id,
-          });
-        }
-      });
-  };
 
   const openChatroom = (chatroom) => {
     axios
@@ -100,13 +79,58 @@ const HomeScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.mainContainer}>
-      <Text style={{ alignSelf: "flex-end", paddingRight: "5%" }}>
-        {config.appName}
-      </Text>
+      <View
+        style={{
+          justifyContent: "space-between",
+          width: "100%",
+          flexDirection: "row",
+        }}
+      >
+        <View
+          style={{
+            alignSelf: "flex-start",
+            justifyContent: "center",
+            width: "30%",
+            marginVertical: "2%",
+            left: "10%",
+          }}
+        >
+          <Pressable
+            onPress={() =>
+              navigation.navigate("Settings", { email: email, id: id })
+            }
+          >
+            <Image
+              source={require("../../assets/person.png")}
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: 200,
+              }}
+            />
+          </Pressable>
+        </View>
+        <Pressable
+          style={{
+            width: "60%",
+            height: 40,
+            alignSelf: "flex-end",
+            alignItems: "flex-end",
+            backgroundColor: config.whiteBackground,
+            borderWidth: 2,
+            borderColor: "white",
+            borderRadius: 30,
+            right: "15%",
+            bottom: "2.5%",
+          }}
+          onPress={() => navigation.navigate("Search", { email: route.params.email, id: route.params.id})}
+        >
+          <Icon name={"magnify"} size={30} />
+        </Pressable>
+      </View>
       <View style={styles.container}>
-        <Text>Your chatrooms:</Text>
         <ScrollView>
-          {chatroomData.length != 0 ? (
+          {chatroomData? chatroomData.length != 0 ? (
             chatroomData.map((chatroomData, key) =>
               chatroomData.chatroom.users[0].email == email ||
               chatroomData.chatroom.users[1].email == email ? (
@@ -116,10 +140,37 @@ const HomeScreen = ({ route, navigation }) => {
                     pressed ? styles.chatroom : styles.pressedChatroom
                   }
                 >
-                  <Text>{chatroomData.chatroom.users[0].email}</Text>
-                  <Text style={{ color: "grey" }}>
-                    {JSON.stringify(chatroomData.lastMessage)}
-                  </Text>
+                  <View
+                    style={{
+                      justifyContent: "space-between",
+                      width: "100%",
+                      flexDirection: "row",
+                    }}
+                  >
+                    <View
+                      style={{
+                        alignSelf: "flex-start",
+                        justifyContent: "center",
+                        width: "30%",
+                      }}
+                    >
+                      <Image
+                        source={require("../../assets/person.png")}
+                        style={{
+                          width: 70,
+                          height: 70,
+                          borderRadius: 200,
+                        }}
+                      />
+                    </View>
+                    <View style={{ alignSelf: "center", width: "70%" }}>
+                      <Text>{chatroomData.chatroom.users[0].email == email? chatroomData.chatroom.users[1].email : chatroomData.chatroom.users[0].email}</Text>
+                      <Text style={{ color: "grey" }}>
+                        {JSON.stringify(chatroomData.lastMessage)}
+                      </Text>
+                      
+                    </View>
+                  </View>
                 </Pressable>
               ) : (
                 <></>
@@ -127,21 +178,8 @@ const HomeScreen = ({ route, navigation }) => {
             )
           ) : (
             <Text>You don't have any chatrooms yet!</Text>
-          )}
-        </ScrollView>
-        <Text>Avaiable users:</Text>
-        <ScrollView>
-          {users.map((user, key) =>
-            user.email != email ? (
-              <Pressable
-                onPress={() => tryCreateChatroom(user)}
-                style={styles.users}
-              >
-                <Text>{user.email}</Text>
-              </Pressable>
-            ) : (
-              <></>
-            )
+          ) : (
+            <Text>You don't have any chatrooms yet!</Text>
           )}
         </ScrollView>
       </View>
@@ -153,28 +191,26 @@ export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    paddingTop: "15%",
+    backgroundColor: config.whiteBackground,
+    paddingTop: "5%",
 
-    borderWidth: 4,
-    borderColor: "#a5e6e1",
-    borderRadius: 30,
+    borderTopEndRadius: 40,
+    borderTopStartRadius: 40,
+    width: "100%",
+    height: "100%",
   },
   mainContainer: {
     flex: 1,
     alignItems: "center",
-    backgroundColor: "#a5e6e1",
-    paddingTop: "15%",
+    backgroundColor: config.primaryColor,
+    paddingTop: "10%",
   },
   chatroom: {
-    padding: 20,
-    backgroundColor: "lightblue",
-    paddingHorizontal: "30%",
-    borderRadius: 20,
-    margin: 2,
-    justifyContent: "space-between",
+    padding: 7,
+    backgroundColor: config.greyBackground,
+
+    borderRadius: 30,
+    margin: 5,
   },
   users: {
     padding: 20,
@@ -192,3 +228,24 @@ const styles = StyleSheet.create({
     margin: 2,
   },
 });
+
+/*
+
+   <Text>Avaiable users:</Text>
+        <ScrollView>
+          {users.map((user, key) =>
+            user.email != email ? (
+              <Pressable
+                onPress={() => tryCreateChatroom(user)}
+                style={styles.users}
+              >
+                <Text>{user.email}</Text>
+              </Pressable>
+            ) : (
+              <></>
+            )
+          )}
+        </ScrollView>
+     
+
+*/
