@@ -34,8 +34,6 @@ const PinScreen = ({navigation}) => {
         setPrivateKeyLoaded(true)
         setCurrentUserPrivateKey(key)
       }
-
-      console.log(currentUserPrivateKey)
     }
 
     useEffect(() => {
@@ -52,7 +50,6 @@ const PinScreen = ({navigation}) => {
     }, [enteredPin])
     
     const getUserPublicKey = async (userId) => {
-      console.log(token)
       const response = await axios.get(config.url + "/user/getPublicKey/" + parseInt(userId), {headers:{Authorization: `Bearer ${token}`}});
       if (response.status == 200) {
         return response.data;
@@ -75,7 +72,6 @@ const PinScreen = ({navigation}) => {
     const request = {
       "id": parseInt(userIdFromStorage),
     }
-    console.log(request)
     await axios.post(config.url + "/user/pin", request, {headers:{Authorization: `Bearer ${token}`}})
     .then(async (response)=>{
       if(response.status == 200){ 
@@ -87,9 +83,8 @@ const PinScreen = ({navigation}) => {
       }
     })
     .catch((error)=>{
-      console.log("aa")
       if(error.response.status == 401){
-        console.log("aa")
+
         Alert.alert("Your session has expired, please log in again.")
       }
     })}

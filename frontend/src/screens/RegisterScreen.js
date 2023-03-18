@@ -17,8 +17,6 @@ const RegisterScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false)
 
   const validate = () => {
-    console.log(email, password, secondPassword);
-    console.log("validate");
     register(email, password, secondPassword);
   };
 

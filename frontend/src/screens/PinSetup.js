@@ -41,8 +41,6 @@ const PinSetup = ({route, navigation}) => {
     }, [enteredPin])
     
     const getUserPublicKey = async (userId) => {
-      console.log(token)
-      console.log(route.params.id)
       const response = await axios.get(config.url + "/user/getPublicKey/" + parseInt(route.params.id), {headers:{Authorization:`$Bearer ${token}`}});
       if (response.status == 200) {
         return response.data;
@@ -65,7 +63,6 @@ const PinSetup = ({route, navigation}) => {
       "id": parseInt(route.params.id),
       "pin": encryptedPin
     }
-    console.log(request)
     axios.put(config.url + "/user/pin", request).then((response)=>{
       if(response.status == 200){ 
         console.log(response.data)

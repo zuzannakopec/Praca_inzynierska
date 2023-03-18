@@ -49,7 +49,6 @@ const SearchScreen = ({ route, navigation }) => {
     axios
       .post(config.url + "/chatroom/findChatroom", body)
       .then((response) => {
-        console.log("AAAA")
         navigation.navigate("Chatroom", { chatroom: response.data, id: id });
       })
       .catch((error) => {
@@ -76,7 +75,6 @@ const SearchScreen = ({ route, navigation }) => {
   }
   
   const createChatroom = async (body, user) => {
-    console.log("BBB")
       const key = await prepareKeys(user);
       const aesKeyString = enc.Hex.stringify(key); 
       const otherUserEncryptedKey = await encryptMessageWithRsa(aesKeyString, otherUserPublicKey);
@@ -114,7 +112,6 @@ const SearchScreen = ({ route, navigation }) => {
     console.log(query);
     axios.post(config.url + "/user/search", query).then((response)=>{
       setUsers(response.data)
-        console.log(response.data)
     });
     
   };

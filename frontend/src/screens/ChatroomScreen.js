@@ -72,7 +72,6 @@ const ChatroomScreen = ({ navigation, route }) => {
       .then(async (response) => {
         setEncryptedMessages(response.data);
       });
-      console.log(messages)
     }
     getHistory()
   },[chatroom.id]);
@@ -104,7 +103,6 @@ const ChatroomScreen = ({ navigation, route }) => {
       const decryptedMessages = await Promise.all(
         encryptedMessages.map(async (message) => {
           const decryptedMessage = await decryptMessageWithAES(message.text, encryptionKey);
-          console.log("DECRYPTED TEXT " + decryptedMessage);
           message.text = decryptedMessage;
           return message;
         })
@@ -116,7 +114,6 @@ const ChatroomScreen = ({ navigation, route }) => {
   
 
   const sendMessage = async () => {
-    console.log("SEND");
     if (message !== "") {
       const encryptedMessage = await encryptMessageWithAES(message, encryptionKey);
       if (isCppEnabled) {
@@ -147,7 +144,6 @@ const ChatroomScreen = ({ navigation, route }) => {
           })
         );
       } else {
-        console.log(encryptedMessage);
         webSocket.send(
           JSON.stringify({
             message: encryptedMessage,
