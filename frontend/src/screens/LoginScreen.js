@@ -18,7 +18,6 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isTokenValid, setIsTokenValid] = useState(false);
-
   const validate = () => {
     login(email, password);
   };
@@ -57,10 +56,10 @@ const LoginScreen = ({ navigation }) => {
   CheckIfTokenValid();
 
   return (
-   // <>
-  //    {isTokenValid ? (
-   //     <PinScreen navigation={navigation} />
-  //    ) : (
+    <>
+      {isTokenValid ? (
+        navigation.navigate("PinScreen")
+      ) : (
         <View style={styles.container}>
           <View
             style={{
@@ -120,8 +119,8 @@ const LoginScreen = ({ navigation }) => {
 
           <StatusBar style="auto" />
         </View>
-  //    )}
- //   </>
+      )}
+    </>
   );
 };
 

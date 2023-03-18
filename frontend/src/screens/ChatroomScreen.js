@@ -47,6 +47,7 @@ const ChatroomScreen = ({ navigation, route }) => {
   const toggleSwitchJs = () => setIsJsEnabled(previousState => !previousState);
 
 
+  const [encryptedMessages, setEncryptedMessages] = useState([]);
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const [currentUserEncryptedKey, setCurrentUserEncryptedKey] = useState("")
@@ -68,20 +69,21 @@ const ChatroomScreen = ({ navigation, route }) => {
     let getHistory = async () =>{
       axios
       .get(config.url + "/chatroom/getMessageHistory/" + chatroom.id)
-      .then((response) => {
-        setMessages(response.data);
-        setMessagesLoaded(true)
+      .then(async (response) => {
+        setEncryptedMessages(response.data);
       });
       console.log(messages)
     }
     getHistory()
-    decryptMessages()
-  }, []);
+  },[chatroom.id]);
 
   useEffect(() => {
+    decryptMessages();
+  }, [encryptedMessages]);
+
+  
+  useEffect(() => {
     if (privateKeyLoaded && currentUserEncryptedKey !== "" && encryptionKey !== "") {
-      console.log('GONNA DECRYPT AES')
-      console.log(encryptionKey)
       decryptAESKey()
     }
   }, [privateKeyLoaded, currentUserEncryptedKey, encryptionKey])
@@ -95,20 +97,23 @@ const ChatroomScreen = ({ navigation, route }) => {
   const decryptAESKey = async () => {
     let key = await decryptMessageWithRsa(currentUserEncryptedKey, privateKey)
     setEncryptionKey(key)
-    console.log("DECRYPTED WITH RSA")
-    console.log(key)
   }
   
   const decryptMessages = async () => {
-    let decryptedMessages = []
-    messages.map(async(message) => {
-      let decryptedMessage = await decryptMessageWithAES(message.text, encryptionKey)
-    //  message.text = decryptedMessage
-      console.log("DECRYPTED TEXT "+decryptedMessage)
-      decryptedMessages.push(message)
-    })
-    setMessages(decryptedMessages)
-  }
+    if (encryptedMessages.length > 0) {
+      const decryptedMessages = await Promise.all(
+        encryptedMessages.map(async (message) => {
+          const decryptedMessage = await decryptMessageWithAES(message.text, encryptionKey);
+          console.log("DECRYPTED TEXT " + decryptedMessage);
+          message.text = decryptedMessage;
+          return message;
+        })
+      );
+      setMessagesLoaded(true)
+      setMessages(decryptedMessages);
+    }
+  };
+  
 
   const sendMessage = async () => {
     console.log("SEND");
@@ -150,22 +155,25 @@ const ChatroomScreen = ({ navigation, route }) => {
             isCode: false,
           })
         );
-        console.log("ok");
       }
       setMessage("");
       inputRef.current.clear();
     }
   };
 
+  const encryptedMessagesRef = useRef(encryptedMessages);
+
+  useEffect(() => {
+    encryptedMessagesRef.current = encryptedMessages;
+  }, [encryptedMessages]);
+  
   useEffect(() => {
     if (webSocket) {
-      webSocket.onmessage = (e) => {
-        axios
-        .get(config.url + "/chatroom/getMessageHistory/" + chatroom.id)
-        .then((response) => {
-          setMessages(response.data); 
-          console.log(messages)
-        });
+      webSocket.onmessage = async (e) => {
+        const response = await axios.get(config.url + "/chatroom/getMessageHistory/" + chatroom.id);
+        encryptedMessagesRef.current = response.data;
+        setMessagesLoaded(false);
+        setEncryptedMessages(response.data);
       };
   
       webSocket.onerror = (e) => {
@@ -178,7 +186,7 @@ const ChatroomScreen = ({ navigation, route }) => {
       };
     }
   }, [webSocket, chatroom.id]);
-  
+
   const handleSendButton = () => {
     setMessage("");
     sendMessage();
@@ -187,7 +195,7 @@ const ChatroomScreen = ({ navigation, route }) => {
   return (
     <View style={styles.container}>
       <View style={styles.title}>
-        <Text>Awesome Chatroom with {userId}</Text>
+
       </View>
       <ScrollView
         style={styles.scrollView}
@@ -228,13 +236,13 @@ const ChatroomScreen = ({ navigation, route }) => {
     alignItems: "flex-end",
     justifyContent: "center",}}>
       <Text>C++</Text>
-      <Switch
+      <Switch 
         trackColor={{false: '#767577', true: config.secondaryColorDark}}
         thumbColor={isCppEnabled ? '#f4f3f4' : '#f4f3f4'}
         ios_backgroundColor="#3e3e3e"
         onValueChange={toggleSwitchCpp}
         value={isCppEnabled}
-      />
+      />   
       <Text>Python</Text>
              <Switch
         trackColor={{false: '#767577', true: config.secondaryColorDark}}
@@ -243,7 +251,7 @@ const ChatroomScreen = ({ navigation, route }) => {
         onValueChange={toggleSwitchPython}
         value={isPythonEnabled}
       />
-      <Text>Javascript</Text>
+      <Text>JS</Text>
              <Switch
         trackColor={{false: '#767577', true: config.secondaryColorDark}}
         thumbColor={isJsEnabled ? '#f4f3f4' : '#f4f3f4'}
@@ -269,7 +277,7 @@ const ChatroomScreen = ({ navigation, route }) => {
 
         <View
           style={{
-            width: "25%",
+            width: "30%",
             backgroundColor: config.primaryColor,
             borderRadius: 3,
             alignItems: "center",
@@ -280,7 +288,7 @@ const ChatroomScreen = ({ navigation, route }) => {
           }}
         >
           <Button
-            buttonStyle={{ backgroundColor: config.primaryColor }}
+            buttonStyle={{ backgroundColor: config.primaryColor}}
             title={"Send"}
             onPress={() => handleSendButton()}
           />
@@ -288,7 +296,7 @@ const ChatroomScreen = ({ navigation, route }) => {
       </View>
     </View>
   );
-};
+}; 
 
 export default ChatroomScreen;
 

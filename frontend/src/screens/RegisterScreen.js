@@ -25,8 +25,6 @@ const RegisterScreen = ({ navigation }) => {
   const register = async (email, password, secondPassword) => {
     setIsLoading(true)
     generateRsaKeyPair().then(({ publicKey, privateKey })=>{
-      console.log("WYGENEROWANE KLUCZE")
-      console.log(publicKey, privateKey)
       setIsLoading(false)
       const request = {
         email: email,
@@ -41,7 +39,6 @@ const RegisterScreen = ({ navigation }) => {
         }
       }).catch((error)=>console.log(error));
     })
-    
   };
 
 
@@ -76,7 +73,6 @@ const RegisterScreen = ({ navigation }) => {
           placeholder="Repeat password"
           onChangeText={(text) => setSecondPassword(text)}
         />
-        <TextInput style={styles.input} placeholder="Company code" />
       </View>
       <Button
         title={"Register"}

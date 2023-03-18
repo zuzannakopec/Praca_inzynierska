@@ -27,8 +27,7 @@ public class MessageService {
                 .codeType(codeType)
                 .build();
         message.setUser(userService.findById(userId).get());
-
-        this.messageRepository.save(message);
+        messageRepository.save(message);
     }
 
 }

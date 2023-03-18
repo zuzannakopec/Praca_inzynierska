@@ -21,12 +21,13 @@ public class User {
     private Long id;
     @Column(unique = true)
     private String email;
+    @Column(length = 65535,columnDefinition="Text")
     private String password;
     private String name;
     private String surname;
     private String position;
-    private String profilePicture;
-    private String jwt;
-    private Integer pin;
+    @Column(length = 65535,columnDefinition="Text")
+    private String pin;
+    @Column(length = 65535,columnDefinition="Text")
     private String publicKey;
 }

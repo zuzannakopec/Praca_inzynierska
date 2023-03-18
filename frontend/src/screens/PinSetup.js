@@ -7,6 +7,7 @@ import config from '../config'
 import { createBoxShadowValue } from 'react-native-web/dist/cjs/exports/StyleSheet/preprocess'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PinView from 'react-native-pin-view'
+import { encryptMessageWithRsa } from '../EncryptionUtils'
 
 
 const PinSetup = ({route, navigation}) => {
@@ -16,7 +17,9 @@ const PinSetup = ({route, navigation}) => {
     const [showCompletedButton, setShowCompletedButton] = useState(false)
     const [userIdFromStorage, setUserIdFromStorage] = useState("");
     const [emailFromStorage, setEmailFromStorage] = useState("")
-  
+    const [publicKey, setPublicKey] = useState("")
+    const [token, setToken] = useState("")
+
     const getInfoFromStorage = async () => {
       let userId = await AsyncStorage.getItem("userId");
       setUserIdFromStorage(userId)
@@ -37,13 +40,30 @@ const PinSetup = ({route, navigation}) => {
       }
     }, [enteredPin])
     
-  
+    const getUserPublicKey = async (userId) => {
+      console.log(token)
+      console.log(route.params.id)
+      const response = await axios.get(config.url + "/user/getPublicKey/" + parseInt(route.params.id), {headers:{Authorization:`$Bearer ${token}`}});
+      if (response.status == 200) {
+        return response.data;
+      } else {
+        console.log(response.status);
+      }
+  };   
+    const prepareKey = async (id) =>{
+      const temp_currentUserPublicKey = await getUserPublicKey(id);
+      setPublicKey(temp_currentUserPublicKey)
+    }
+
+ 
   const savePin = async () =>{
     await getInfoFromStorage()
+    await prepareKey(parseInt(userIdFromStorage))
+    let encryptedPin = await encryptMessageWithRsa(enteredPin, publicKey)
 
     const request = {
       "id": parseInt(route.params.id),
-      "pin": parseInt(enteredPin)
+      "pin": encryptedPin
     }
     console.log(request)
     axios.put(config.url + "/user/pin", request).then((response)=>{

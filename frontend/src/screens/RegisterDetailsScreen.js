@@ -4,7 +4,6 @@ import { StyleSheet, Text, View, TextInput, Image } from "react-native";
 import { Button, Input } from "react-native-elements";
 import axios from "axios";
 import config from "../config";
-import * as ImagePicker from "expo-image-picker"; // not react-image-picker
 
 const RegisterDetailsScreen = ({ route, navigation }) => {
   const [name, setName] = useState("");
@@ -14,7 +13,6 @@ const RegisterDetailsScreen = ({ route, navigation }) => {
   const [error1Visibility, setError1Visibility] = useState(false);
   const [error2Visibility, setError2Visibility] = useState(false);
   const [error3Visibility, setError3Visibility] = useState(false);
-  const [image, setImage] = useState("");
 
   const validate = () => {
     setError1Visibility(false)
@@ -44,6 +42,7 @@ const RegisterDetailsScreen = ({ route, navigation }) => {
       surname: surname,
       position: position,
     };
+  
     axios.put(config.url + "/user/update", request).then((response) => {
       if (response.status == 200) {
         navigation.navigate("PinSetup", {
@@ -53,21 +52,7 @@ const RegisterDetailsScreen = ({ route, navigation }) => {
       }
     });
   };
-  const handleChoosePhoto = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    console.log(result);
-
-    if (!result.cancelled) {
-      setImage(result.uri);
-    }
-  };
-
+ 
   return (
     <View style={styles.container}>
       <View
@@ -80,30 +65,8 @@ const RegisterDetailsScreen = ({ route, navigation }) => {
         }}
       ></View>
       <View style={styles.headerContainer}></View>
-      <Text>Set user details</Text>
+      <Text style={{color:config.greyBackground, fontSize:24, marginBottom:10}}>Set user details</Text>
       <View style={styles.textBlock}>
-        <View style={{ justifyContent: "space-between",width:'100%' }}>
-          {image && (
-            <Image
-              source={{ uri: image }}
-              style={{ width: 100, height: 100, borderRadius: 200 }}
-            />
-          )}
-          <Button
-            buttonStyle={{
-              backgroundColor: config.secondaryColorDark,
-              borderWidth: 2,
-              borderColor: "white",
-              borderRadius: 30,
-            }}
-            containerStyle={{
-                width: 150,
-                alignSelf:'flex-end'
-              }}
-            title="Choose Photo"
-            onPress={handleChoosePhoto}
-          />
-        </View>
         <TextInput
           style={styles.input}
           placeholder="Name"

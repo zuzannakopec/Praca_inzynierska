@@ -38,6 +38,7 @@ const SearchScreen = ({ route, navigation }) => {
   }, []);
 
   const tryCreateChatroom = (user) => {
+
     const currentUser = {
       email: email,
     };
@@ -48,10 +49,11 @@ const SearchScreen = ({ route, navigation }) => {
     axios
       .post(config.url + "/chatroom/findChatroom", body)
       .then((response) => {
+        console.log("AAAA")
         navigation.navigate("Chatroom", { chatroom: response.data, id: id });
       })
       .catch((error) => {
-        createChatroom(body, user);
+          createChatroom(body, user);
       });
   };
 
@@ -74,14 +76,12 @@ const SearchScreen = ({ route, navigation }) => {
   }
   
   const createChatroom = async (body, user) => {
+    console.log("BBB")
       const key = await prepareKeys(user);
       const aesKeyString = enc.Hex.stringify(key); 
       const otherUserEncryptedKey = await encryptMessageWithRsa(aesKeyString, otherUserPublicKey);
       const currentUserEncryptedKey = await encryptMessageWithRsa(aesKeyString, currentUserPublicKey);
-  
-      console.log("creating chatroom");
       const response = await axios.post(config.url + "/chatroom/createChatroom", body);
-
       if (response.status === 200) {
         const chatroomData = response.data;
         const accessibilityBody = [
@@ -96,19 +96,12 @@ const SearchScreen = ({ route, navigation }) => {
             encryptedKey: currentUserEncryptedKey,
           },
         ];
-  
-
         const accessibilityResponse = await axios.post(config.url + "/chatroom/accessibility", accessibilityBody);
-        console.log("AAAAAAAAAAA");
-
         if (accessibilityResponse.status === 200) {
-          console.log("ChatroomData")
-          console.log(chatroomData)
           navigation.navigate("Chatroom", {
             chatroom: chatroomData,
             email: email,
             id: id,
-  
           });
         }
       }
@@ -116,16 +109,17 @@ const SearchScreen = ({ route, navigation }) => {
   };
   
 
- 
-  const searchClient = algoliasearch(
-    "YourApplicationID",
-    "YourSearchOnlyAPIKey"
-  );
 
   const search = () => {
     console.log(query);
-    console.log("searc");
+    axios.post(config.url + "/user/search", query).then((response)=>{
+      setUsers(response.data)
+        console.log(response.data)
+    });
+    
   };
+
+
   return (
     <View style={styles.mainContainer}>
       <View
@@ -144,14 +138,7 @@ const SearchScreen = ({ route, navigation }) => {
             left: "10%",
           }}
         >
-          <Image
-            source={require("../../assets/person.png")}
-            style={{
-              width: 50,
-              height: 50,
-              borderRadius: 200,
-            }}
-          />
+       <Icon name="account-circle" size={40} color={config.whiteBackground}/>
         </View>
         <View
           style={{
@@ -189,7 +176,7 @@ const SearchScreen = ({ route, navigation }) => {
       <View style={styles.container}>
         <Text style={{ left: "3%" }}>Avaiable users:</Text>
         <ScrollView>
-          <InstantSearch searchClient={searchClient} indexName="instant_search">
+
             {users.map((user, key) =>
               user.email != email ? (
                 <Pressable
@@ -210,17 +197,10 @@ const SearchScreen = ({ route, navigation }) => {
                         width: "30%",
                       }}
                     >
-                      <Image
-                        source={require("../../assets/person.png")}
-                        style={{
-                          width: 70,
-                          height: 70,
-                          borderRadius: 200,
-                        }}
-                      />
+                    <Icon name="account-circle" size={70} color={config.secondaryColorDark}/>
                     </View>
                     <Text style={{ alignSelf: "center", width: "70%" }}>
-                      {user.email}
+                      {user.name+ " " + user.surname}
                     </Text>
                   </View>
                 </Pressable>
@@ -228,7 +208,7 @@ const SearchScreen = ({ route, navigation }) => {
                 <></>
               )
             )}
-          </InstantSearch>
+
         </ScrollView>
       </View>
     </View>

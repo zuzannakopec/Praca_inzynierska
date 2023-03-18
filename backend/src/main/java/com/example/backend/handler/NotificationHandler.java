@@ -17,7 +17,7 @@ import java.util.logging.Logger;
 
 
 public class NotificationHandler extends TextWebSocketHandler {
-    private static final Logger log = Logger.getLogger(ChatroomHandler.class.getName());
+    private static final Logger log = Logger.getLogger(NotificationHandler.class.getName());
     private final MessageService messageService;
     private final ChatroomService chatroomService;
     private final Long senderId;

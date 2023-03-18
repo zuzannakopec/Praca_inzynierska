@@ -60,6 +60,10 @@ public class ChatroomService {
         return Optional.empty();
     }
 
+
+
+
+
     public ResponseEntity<String> saveAccessibility(List<Accessibility> accessibilityList){
         try {
             accessibilityRepository.saveAll(accessibilityList);
@@ -77,6 +81,8 @@ public class ChatroomService {
         }
         return result;
     }
+
+
 
     public Accessibility getAccessibility(Long userId, Long chatroomId){
        return accessibilityRepository.findByUserIdAndChatroomId(userId, chatroomId);

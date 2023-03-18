@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar'
-import { StyleSheet, Text, View, TextInput } from 'react-native'
+import { StyleSheet, Text, View, TextInput, Alert } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import { Button, Input } from 'react-native-elements'
 import axios from 'axios'
@@ -7,6 +7,7 @@ import config from '../config'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PinView from 'react-native-pin-view'
 import * as SecureStore from "expo-secure-store";
+import { decryptMessageWithRsa, encryptMessageWithRsa } from '../EncryptionUtils'
 
 
 const PinScreen = ({navigation}) => {
@@ -16,12 +17,25 @@ const PinScreen = ({navigation}) => {
     const [showCompletedButton, setShowCompletedButton] = useState(false)
     const [userIdFromStorage, setUserIdFromStorage] = useState("");
     const [emailFromStorage, setEmailFromStorage] = useState("")
-  
+    const [currentUserPublicKey, setCurrentUserPublicKey] = useState("")
+    const [currentUserPrivateKey, setCurrentUserPrivateKey] = useState("")
+    const [token, setToken] = useState("")
+    const [privateKeyLoaded, setPrivateKeyLoaded] = useState(false)
+
     const getInfoFromStorage = async () => {
       let userId = await SecureStore.getItemAsync("userId");
       setUserIdFromStorage(userId)
       let tempEmail = await SecureStore.getItemAsync("email");
       setEmailFromStorage(tempEmail)
+      let temp = await SecureStore.getItemAsync("token");
+      setToken(temp)
+      let key = await SecureStore.getItemAsync("privateKey");
+      if(key!= null){
+        setPrivateKeyLoaded(true)
+        setCurrentUserPrivateKey(key)
+      }
+
+      console.log(currentUserPrivateKey)
     }
 
     useEffect(() => {
@@ -37,22 +51,48 @@ const PinScreen = ({navigation}) => {
       }
     }, [enteredPin])
     
+    const getUserPublicKey = async (userId) => {
+      console.log(token)
+      const response = await axios.get(config.url + "/user/getPublicKey/" + parseInt(userId), {headers:{Authorization: `Bearer ${token}`}});
+      if (response.status == 200) {
+        return response.data;
+      } else {
+        console.log(response.status);
+      }
+  };
   
+  const goToLogin = async() =>{
+    await SecureStore.deleteItemAsync("token")
+    navigation.navigate("Login")
+  }
+  const prepareKey = async (id) =>{
+    const temp_currentUserPublicKey = await getUserPublicKey(id);
+    setCurrentUserPublicKey(temp_currentUserPublicKey)
+  }
   const validatePin = async () =>{
     await getInfoFromStorage()
-
+    await prepareKey(parseInt(userIdFromStorage))
     const request = {
       "id": parseInt(userIdFromStorage),
-      "pin": parseInt(enteredPin)
     }
     console.log(request)
-    axios.post(config.url + "/user/pin", request).then((response)=>{
+    await axios.post(config.url + "/user/pin", request, {headers:{Authorization: `Bearer ${token}`}})
+    .then(async (response)=>{
       if(response.status == 200){ 
-        console.log(emailFromStorage, userIdFromStorage)
-        navigation.navigate("Home", {email: emailFromStorage, id: userIdFromStorage})
+        let decryptedPin = await decryptMessageWithRsa(response.data, currentUserPrivateKey)
+        if(enteredPin == decryptedPin){
+          console.log(emailFromStorage, userIdFromStorage)
+          navigation.navigate("Home", {email: emailFromStorage, id: userIdFromStorage})
+        }
       }
     })
-   }
+    .catch((error)=>{
+      console.log("aa")
+      if(error.response.status == 401){
+        console.log("aa")
+        Alert.alert("Your session has expired, please log in again.")
+      }
+    })}
   
     return ( <View style={styles.container}>
       <View style={styles.headerContainerPin}></View>
@@ -105,7 +145,7 @@ const PinScreen = ({navigation}) => {
                 pinView.current.clear()
               }}
               />  : undefined}
-              {showCompletedButton ? <Button title={"Login"} onPress={()=>validatePin()} buttonStyle={{
+              {showCompletedButton ? <Button title={"Login"} onPress={async ()=>await validatePin()} buttonStyle={{
                 backgroundColor: config.secondaryColorDark,
                 borderWidth: 2,
                 borderColor: 'white',
@@ -114,12 +154,12 @@ const PinScreen = ({navigation}) => {
               }}/> : undefined}
               </View>
 
-              <Button title={"Return to login page"} onPress={()=>{navigation.navigate("Login")}} buttonStyle={{
+              <Button title={"Return to login page"} onPress={()=>goToLogin()} buttonStyle={{
                 backgroundColor: config.secondaryColorDark,
                 borderWidth: 2,
                 borderColor: 'white',
                 borderRadius: 30,
-                alignItems:"flex-end"
+                alignItems:"flex-end" 
               }}/>
       </View>  
   

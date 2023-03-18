@@ -4,6 +4,6 @@ import lombok.Getter;
 
 @Getter
 public class PinInfo {
-    Integer pin;
+    String pin;
     Long id;
 }

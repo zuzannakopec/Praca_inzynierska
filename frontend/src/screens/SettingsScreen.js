@@ -4,7 +4,6 @@ import { StyleSheet, Text, View, TextInput, Image } from "react-native";
 import { Button, Input } from "react-native-elements";
 import axios from "axios";
 import config from "../config";
-import * as ImagePicker from "expo-image-picker";
 import * as SecureStore from "expo-secure-store";
 
 const SettingsScreen = ({ route, navigation }) => {
@@ -15,7 +14,7 @@ const SettingsScreen = ({ route, navigation }) => {
   const [error1Visibility, setError1Visibility] = useState(false);
   const [error2Visibility, setError2Visibility] = useState(false);
   const [error3Visibility, setError3Visibility] = useState(false);
-  const [image, setImage] = useState("");
+
 
   const validate = () => {
     setError1Visibility(false)
@@ -35,11 +34,10 @@ const SettingsScreen = ({ route, navigation }) => {
         return
     }
 
-    register(name, surname, position);
+    update(name, surname, position);
   };
 
-  const register = (name, surname, position) => {
-    console.log("AAA");
+  const update = (name, surname, position) => {
     const request = {
       name: name,
       surname: surname,
@@ -54,20 +52,7 @@ const SettingsScreen = ({ route, navigation }) => {
       }
     });
   };
-  const handleChoosePhoto = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
 
-    console.log(result);
-
-    if (!result.cancelled) {
-      setImage(result.uri);
-    }
-  };
 
   const logout = async () => {
     await clearStorage()
@@ -92,30 +77,8 @@ const SettingsScreen = ({ route, navigation }) => {
         }}
       ></View>
       <View style={styles.headerContainer}></View>
-      <Text>Set user details</Text>
+      <Text style={{color:config.greyBackground, fontSize:24, marginBottom:10}}>Set user details</Text>
       <View style={styles.textBlock}>
-        <View style={{ justifyContent: "space-between",width:'100%' }}>
-          {image && (
-            <Image
-              source={{ uri: image }}
-              style={{ width: 100, height: 100, borderRadius: 200 }}
-            />
-          )}
-          <Button
-            buttonStyle={{
-              backgroundColor: config.secondaryColorDark,
-              borderWidth: 2,
-              borderColor: "white",
-              borderRadius: 30,
-            }}
-            containerStyle={{
-                width: 150,
-                alignSelf:'flex-end'
-              }}
-            title="Choose Photo"
-            onPress={handleChoosePhoto}
-          />
-        </View>
         <TextInput
           style={styles.input}
           placeholder="Name"
@@ -204,7 +167,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderRadius: 20,
     width: "90%",
-    height: "60%",
+    height: "50%",
     padding: 20,
     alignItems: "center",
     justifyContent: "center",
@@ -219,7 +182,7 @@ const styles = StyleSheet.create({
     top: "12%",
   },
   input: {
-    height: "13%",
+    height: "18%",
     width: "95%",
     margin: 15,
     borderWidth: 2,

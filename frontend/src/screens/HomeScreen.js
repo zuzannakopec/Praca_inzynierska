@@ -21,36 +21,6 @@ const HomeScreen = ({ route, navigation }) => {
   let ws = new WebSocket(config.WebSocketUrl + id);
 
 
-  const getChatroomPreviews = async () => {
-    axios.get(
-      config.url + "/chatroom/getChatrooms"
-    ).then(async (response) => {
-      let allChatroomsResponse = response.data
-      setAllChatroomResponse(response.data)
-      if(response.data.length > 0){
-        let chatroomPreviews = [];
-        for (const chatroom of allChatroomsResponse.data) {
-          try {
-            let lastMessageResponse = await axios.get(
-              config.url + "/chatroom/getLastMessage/" + chatroom.id
-            );
-            chatroomPreviews.push({
-              chatroom: chatroom,
-              lastMessage: lastMessageResponse.data.text,
-            });
-          } catch (error) {
-            console.log(
-              `Failed getting last message for chatroom ${chatroom.id} with: ${error}`
-            );
-          }
-        }
-        return chatroomPreviews;
-      }
-    })
-    
-  };
-
-
 
   useEffect(() => {
     let asyncEffect = async () => {
@@ -60,7 +30,6 @@ const HomeScreen = ({ route, navigation }) => {
         setChatroomsData(response.data)
         setChatroomDataLoaded(true)
       })
- //     setChatroomData(await getChatroomPreviews());
     };
     asyncEffect();
 
@@ -84,7 +53,7 @@ const HomeScreen = ({ route, navigation }) => {
           navigation.navigate("Chatroom", {
             chatroom: response.data,
             email: email,
-            id: id,
+            id: id
           });
         }
       });
@@ -113,14 +82,7 @@ const HomeScreen = ({ route, navigation }) => {
               navigation.navigate("Settings", { email: email, id: id, Websocket:ws })
             }
           >
-            <Image
-              source={require("../../assets/person.png")}
-              style={{
-                width: 50,
-                height: 50,
-                borderRadius: 200,
-              }}
-            />
+           <Icon name="account-circle" size={50} color={config.whiteBackground}/>
           </Pressable>
         </View>
         <Pressable
@@ -175,19 +137,12 @@ const HomeScreen = ({ route, navigation }) => {
                         width: "30%",
                       }}
                     >
-                      <Image
-                        source={require("../../assets/person.png")}
-                        style={{
-                          width: 70,
-                          height: 70,
-                          borderRadius: 200,
-                        }}
-                      />
+                    <Icon name="account-circle" size={70} color={config.whiteBackground}/>
                     </View>
                     <View style={{ alignSelf: "center", width: "70%" }}>
-                      <Text>{chatroomData.users[0].email == email? chatroomData.users[1].email : chatroomData.users[0].email}</Text>
+                      <Text>{chatroomData.users[0].email == email? chatroomData.users[1].name +" "+ chatroomData.users[1].surname : chatroomData.users[0].name +" "+ chatroomData.users[0].surname }</Text>
                       <Text style={{ color: "grey" }}>
-                        JSON.stringify(chatroomData.lastMessage)
+                      
                       </Text>
                       
                     </View>
@@ -197,7 +152,11 @@ const HomeScreen = ({ route, navigation }) => {
               }}}
              )}
           
-        {/*chatroomDataLoaded ? (
+        {/*
+        
+         JSON.stringify(chatroomData.lastMessage)
+        
+        chatroomDataLoaded ? (
         chatroomsData.map((chatroomData, key) => {
           if (chatroomData && chatroomData.users) {
             const chatroomUsers = chatroomData.chatroom.users;

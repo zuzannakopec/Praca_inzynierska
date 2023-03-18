@@ -19,6 +19,7 @@ public class Message {
             strategy = GenerationType.IDENTITY
     )
     Long id;
+    @Column(length = 65535,columnDefinition="Text")
     String text;
     boolean isCode;
     String codeType;
@@ -30,6 +31,4 @@ public class Message {
             cascade = {CascadeType.MERGE}
     )
     User user;
-    String iv;
-
 }
